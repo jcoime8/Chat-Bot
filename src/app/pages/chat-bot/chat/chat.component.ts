@@ -27,6 +27,14 @@ interface PaymentContext {
   productId?: string;
 }
 
+interface CartItem {
+  productId: string;
+  title: string;
+  price: number;
+  thumbnail: string;
+  quantity: number;
+}
+
 interface Card {
   id: string;
   banco: string;
@@ -49,6 +57,9 @@ export class ChatComponent {
   userInput = '';
   showChat = false;
   private esperandoRespuestaDeOpciones: boolean = false;
+  cart: CartItem[] = [];
+  showCart = false;
+
 
   formData = {
     name: '',
@@ -231,14 +242,25 @@ export class ChatComponent {
   2. Luego, escribe el nombre de la categoría para ver los 5 productos más vendidos en esa categoría.<br><br>
   Adicionalmente, puedes explorar categorías desde la página principal utilizando la paginación.<br><br>`,
 
-    pagos: `Puedes realizar pagos mediante los siguientes métodos:<br><br>
+    pagos: `Puedes realizar pagos y pedidos mediante los siguientes métodos:<br><br>
+  <strong>📦 Realizar un pedido:</strong><br>
+  • Escribe en el chat: <strong>"comprar [ID del producto]"</strong> para comprar un producto específico.<br>
+  • Para ver tu pedido actual, escribe: <strong>"ver pedido"</strong> o <strong>"mi pedido"</strong>.<br>
+  • Para pagar todo tu pedido, escribe: <strong>"pagar pedido"</strong>.<br><br>
+  
+  <strong>💳 Métodos de pago disponibles:</strong><br>
   1. Tarjeta de crédito o débito<br>
   2. PayPal<br>
   3. Efectivo<br>
   4. Transferencia bancaria<br><br>
-  Para pagar con tarjeta:<br>
-  • Escribe en el chat: <strong>"comprar [ID del producto]"</strong>.<br>
-  • Si no tienes una tarjeta asociada, puedes escribir: <strong>"registrar tarjeta"</strong> y se mostrará un formulario para completar con tus datos.<br><br>`,
+  
+  <strong>Instrucciones para pagar:</strong><br>
+  • <strong>Con tarjeta:</strong> Si no tienes una tarjeta asociada, escribe <strong>"registrar tarjeta"</strong> para completar tus datos.<br>
+  • <strong>PayPal:</strong> Se abrirá una ventana para completar el pago de forma segura.<br>
+  • <strong>Efectivo:</strong> Puedes pagar al recibir tu pedido o en nuestra tienda física.<br>
+  • <strong>Transferencia:</strong> Te proporcionaremos los datos bancarios para realizar la transferencia.<br><br>
+  
+  <strong>📝 Nota:</strong> Puedes agregar múltiples productos a tu pedido antes de pagar.`,
 
     envios: `Ofrecemos las siguientes opciones de envío:<br><br>
   1. Envío a domicilio<br>
@@ -390,11 +412,155 @@ export class ChatComponent {
       return;
     }
 
+    if (/^(ver pedido|mi pedido|carrito|pedido)/i.test(lowerMsg)) {
+      this.showCartContents();
+      return;
+    }
+
+    if (/^(pagar pedido|comprar pedido|finalizar pedido)/i.test(lowerMsg)) {
+      if (this.cart.length === 0) {
+        this.messages.push({
+          text: 'Tu pedido está vacío. Agrega productos antes de pagar.',
+          sender: 'bot'
+        });
+        return;
+      }
+
+      // Calcula el total
+      const total = this.cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+      this.messages.push({
+        text: `Estás a punto de comprar ${this.cart.length} producto(s) por un total de $${total.toFixed(2)}.<br><br>
+           ¿Qué método de pago prefieres?<br><br>
+           💳 <strong>Tarjeta</strong> (crédito/débito)<br>
+           📱 <strong>PayPal</strong><br>
+           💰 <strong>Efectivo</strong><br>
+           � <strong>Transferencia</strong> bancaria`,
+        sender: 'bot',
+        html: true
+      });
+
+      this.paymentContext = {
+        active: true,
+        step: 'payment_method_selection'
+      };
+
+      // Configura el currentPayment con los datos del carrito
+      this.currentPayment = {
+        paymentStatus: 'pending',
+        // Puedes agregar más detalles aquí según necesites
+      };
+
+      return;
+    }
+
     this.handleOtherCommands(lowerMsg, userFirstName, this.friendlyResponses);
   }
 
   private initiatePurchaseProcess(productId: string) {
     this.searchProductById(productId, true);
+    this.searchProductById(productId, true);
+
+    // Cambia el mensaje para ofrecer opciones de carrito
+    this.messages.push({
+      text: '¿Deseas agregar este producto a tu pedido o comprarlo directamente?<br><br>' +
+        '1. Agregar al pedido<br>' +
+        '2. Comprar ahora',
+      sender: 'bot',
+      html: true
+    });
+
+    this.paymentContext = {
+      active: true,
+      step: 'purchase_confirmation'
+    };
+  }
+
+  private addToCart(product: Product) {
+    const existingItem = this.cart.find(item => item.productId === product.id.toString());
+
+    if (existingItem) {
+      existingItem.quantity += 1;
+      this.messages.push({
+        text: `Se ha aumentado la cantidad de "${product.title}" en tu pedido.`,
+        sender: 'bot'
+      });
+    } else {
+      this.cart.push({
+        productId: product.id.toString(),
+        title: product.title,
+        price: product.price,
+        thumbnail: product.thumbnail,
+        quantity: 1
+      });
+      this.messages.push({
+        text: `"${product.title}" se ha agregado a tu pedido.`,
+        sender: 'bot'
+      });
+    }
+
+    this.showCartButton();
+  }
+
+  private showCartButton() {
+    this.showCart = this.cart.length > 0;
+  }
+
+  public showCartContents() {
+    if (this.cart.length === 0) {
+      this.messages.push({
+        text: 'Tu pedido está vacío.',
+        sender: 'bot'
+      });
+      return;
+    }
+
+    let total = 0;
+    let cartContents = '<strong>Tu pedido:</strong><br><br>';
+
+    this.cart.forEach(item => {
+      const itemTotal = item.price * item.quantity;
+      total += itemTotal;
+      cartContents += `
+      <div style="display: flex; align-items: center; margin-bottom: 10px;">
+        <img src="${item.thumbnail}" alt="${item.title}" style="width: 50px; height: auto; margin-right: 10px;">
+        <div>
+          <strong>${item.title}</strong><br>
+          Cantidad: ${item.quantity}<br>
+          $${item.price} c/u → $${itemTotal.toFixed(2)}<br>
+          <button style="margin-top: 5px; padding: 2px 5px; font-size: 12px;" 
+                  (click)="removeFromCart('${item.productId}')">Eliminar</button>
+        </div>
+      </div>
+    `;
+    });
+
+    cartContents += `<br><strong>Total: $${total.toFixed(2)}</strong><br><br>`;
+    cartContents += '¿Qué deseas hacer?<br>' +
+      '1. Proceder al pago<br>' +
+      '2. Seguir comprando<br>' +
+      '3. Vaciar pedido';
+
+    this.messages.push({
+      text: cartContents,
+      sender: 'bot',
+      html: true
+    });
+  }
+
+  removeFromCart(productId: string) {
+    this.cart = this.cart.filter(item => item.productId !== productId);
+    this.showCartButton();
+    this.showCartContents();
+  }
+
+  clearCart() {
+    this.cart = [];
+    this.showCart = false;
+    this.messages.push({
+      text: 'Tu pedido ha sido vaciado.',
+      sender: 'bot'
+    });
   }
 
   private searchProductById(id: string, forPurchase = false) {
@@ -480,28 +646,46 @@ export class ChatComponent {
   }
 
 
+
+
   private handlePurchaseConfirmation(response: string, userName: string) {
-    if (/^(sí|si|sip|claro|por supuesto|ok)/i.test(response)) {
+    if (/^(1|agregar|pedido)/i.test(response)) {
+      if (this.currentPayment?.productDetails) {
+        this.addToCart({
+          id: parseInt(this.currentPayment.productId || '0'),
+          title: this.currentPayment.productDetails.title,
+          price: this.currentPayment.productDetails.price,
+          thumbnail: this.currentPayment.productDetails.thumbnail,
+          // Agrega otras propiedades necesarias de Product
+          description: '',
+          rating: 0,
+          stock: 0,
+          brand: '',
+          category: '',
+          discountPercentage: 0,
+          images: []
+        });
+        this.resetPaymentContext();
+      }
+    } else if (/^(2|comprar ahora|pagar)/i.test(response)) {
+      // Proceso de pago directo (como está actualmente)
       this.messages.push({
         text: `Excelente ${userName}. ¿Qué método de pago prefieres?<br><br>
-               💳 <strong>Tarjeta</strong> (crédito/débito)<br>
-               📱 <strong>PayPal</strong><br>
-               💰 <strong>Efectivo</strong><br>
-               🏦 <strong>Transferencia</strong> bancaria`,
+             💳 <strong>Tarjeta</strong> (crédito/débito)<br>
+             📱 <strong>PayPal</strong><br>
+             💰 <strong>Efectivo</strong><br>
+             🏦 <strong>Transferencia</strong> bancaria`,
         sender: 'bot',
         html: true
       });
       this.paymentContext.step = 'payment_method_selection';
-    } else if (/^(no|nop|cancelar|ahora no)/i.test(response)) {
-      this.messages.push({
-        text: `Entendido ${userName}. ¿En qué más puedo ayudarte?`,
-        sender: 'bot'
-      });
-      this.resetPaymentContext();
     } else {
       this.messages.push({
-        text: `Perdona ${userName}, no entendí. ¿Deseas proceder con la compra? (responde "sí" o "no")`,
-        sender: 'bot'
+        text: `Por favor selecciona una opción válida:<br><br>
+             1. Agregar al pedido<br>
+             2. Comprar ahora`,
+        sender: 'bot',
+        html: true
       });
     }
   }

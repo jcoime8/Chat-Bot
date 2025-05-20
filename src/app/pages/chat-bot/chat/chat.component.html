@@ -1,3 +1,7 @@
+<button *ngIf="showCart" (click)="showCartContents()" class="cart-button">
+  🛒 <span class="cart-count">{{cart.length}}</span>
+</button>
+
 <!-- Botón flotante que abre/cierra el chat -->
 <button class="chat-toggle-btn" (click)="toggleChat()">💬</button>
 
