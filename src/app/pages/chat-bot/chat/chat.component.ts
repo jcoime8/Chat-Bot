@@ -72,7 +72,7 @@ export class ChatComponent {
     notUnderstood: 'Lo siento Cliente, no entendí bien tu consulta. ¿Podrías reformularla?',
     defaultOptions: `Aquí tienes algunas preguntas frecuentes:<br><br>
                     <strong>1.</strong> ¿Cómo puedo buscar un producto específico?<br>
-                    <strong>2.</strong> ¿Qué métodos de pago aceptan?<br>
+                    <strong>2.</strong> ¿Como realizar pedidos y pagos?<br>
                     <strong>3.</strong> ¿Cuál es el tiempo de envío y costo?<br>
                     <strong>4.</strong> ¿Cómo contacto al servicio al cliente?<br>
                     <strong>5.</strong> ¿Dónde se encuentra ubicada la tienda física?<br>
