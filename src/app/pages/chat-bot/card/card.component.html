@@ -1,0 +1,15 @@
+<div class="container py-4">
+    <div class="row g-4">
+        <div class="col-sm-6 col-md-4 col-lg-3" *ngFor="let pro of productos?.products">
+            <div class="card h-100 shadow-sm">
+                <img [src]="pro.images[0]" class="card-img-top" alt="{{pro.title}}">
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title text-truncate">{{ pro.title }}</h5>
+                    <p class="card-text mb-1"><strong>ID:</strong> {{ pro.id }}</p>
+                    <p class="card-text mb-3"><strong>Precio:</strong> ${{ pro.price }}</p>
+                    <a href="#" class="btn btn-outline-primary mt-auto w-100">Ver más</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

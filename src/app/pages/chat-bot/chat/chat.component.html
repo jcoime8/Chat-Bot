@@ -1,0 +1,115 @@
+<!-- Botón flotante que abre/cierra el chat -->
+<button class="chat-toggle-btn" (click)="toggleChat()">💬</button>
+
+<!-- Contenedor del chatbot -->
+<div class="chat-container" *ngIf="showChat">
+    <div class="chat-box">
+        <div *ngFor="let message of messages" class="message"
+            [ngClass]="{'user': message.sender === 'user', 'bot': message.sender === 'bot'}">
+            <div class="message-text" [innerHTML]="message.text"></div>
+        </div>
+    </div>
+
+    <div class="input-area">
+        <input type="text" [(ngModel)]="userInput" (keydown.enter)="sendMessage()" placeholder="Escribe un mensaje..."
+            class="form-control" />
+        <button class="btn btn-primary" (click)="sendMessage()">Enviar</button>
+    </div>
+</div>
+
+<!-- Modal: Formulario para nueva tarjeta -->
+<div class="modal fade" tabindex="-1" [class.show]="showCardFormModal"
+    [style.display]="showCardFormModal ? 'block' : 'none'" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form (ngSubmit)="enviarFormularioTarjeta()">
+                <div class="modal-header">
+                    <h5 class="modal-title">Registrar tarjeta</h5>
+                    <button type="button" class="btn-close" (click)="showCardFormModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Número de tarjeta:</label>
+                        <input type="text" class="form-control" [(ngModel)]="cardForm.numero" name="numero" required />
+                    </div>
+                    <div class="mb-3">
+                        <label>Nombre en la tarjeta:</label>
+                        <input type="text" class="form-control" [(ngModel)]="cardForm.nombre" name="nombre" required />
+                    </div>
+                    <div class="mb-3">
+                        <label>Fecha de vencimiento:</label>
+                        <input type="text" class="form-control" [(ngModel)]="cardForm.vencimiento" name="vencimiento"
+                            required />
+                    </div>
+                    <div class="mb-3">
+                        <label>CVV:</label>
+                        <input type="text" class="form-control" [(ngModel)]="cardForm.cvv" name="cvv" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Registrar</button>
+                    <button type="button" class="btn btn-secondary"
+                        (click)="showCardFormModal = false">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Selección de tarjeta asociada -->
+<div class="modal fade" tabindex="-1" [class.show]="showCardListModal"
+    [style.display]="showCardListModal ? 'block' : 'none'" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form (ngSubmit)="pagarConTarjeta()">
+                <div class="modal-header">
+                    <h5 class="modal-title">Selecciona una tarjeta</h5>
+                    <button type="button" class="btn-close" (click)="showCardListModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div *ngFor="let tarjeta of tarjetasAsociadas" class="form-check">
+                        <input class="form-check-input" type="radio" name="tarjeta" [value]="tarjeta"
+                            [(ngModel)]="tarjetaSeleccionada" required />
+                        <label class="form-check-label">{{ tarjeta.banco }} - {{ tarjeta.numero }}</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Pagar</button>
+                    <button type="button" class="btn btn-secondary"
+                        (click)="showCardListModal = false">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Servicio al cliente -->
+<div class="modal fade" tabindex="-1" [class.show]="showCustomerServiceModal"
+    [style.display]="showCustomerServiceModal ? 'block' : 'none'" role="dialog">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form #formRef="ngForm" (ngSubmit)="enviarFormularioServicioCliente(formRef)">
+                <div class="modal-header">
+                    <h5 class="modal-title">Servicio al cliente</h5>
+                    <button type="button" class="btn-close" (click)="showCustomerServiceModal = false"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Nombre completo:</label>
+                        <input type="text" name="name" [(ngModel)]="formData.name" class="form-control" required />
+                    </div>
+                    <div class="mb-3">
+                        <label>Mensaje:</label>
+                        <textarea name="message" [(ngModel)]="formData.message" class="form-control" rows="3"
+                            required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success">Enviar</button>
+                    <button type="button" class="btn btn-secondary"
+                        (click)="showCustomerServiceModal = false">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

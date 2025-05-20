@@ -1,0 +1,10 @@
+<ul class="categoria-lista">
+  <li *ngFor="let categoria of getCategorias()">
+    <button 
+      class="categoria-btn"
+      (click)="selecCategoria(categoriaAliasMap[categoria])">
+      {{ categoria }}
+    </button>
+  </li>
+</ul>
+
